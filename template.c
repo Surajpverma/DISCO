@@ -132,15 +132,19 @@ int **warshall(Graph *g)
     }
 
     // Code goes here
+    for (int i = 0; i < g->n; i++) 
+        for (int j = 0; j < g->n; j++)
+            closure[i][j] = g->adj[i][j];
+    
     for (int s = 0; s < g->n; s++)
-    {
         for (int p = 0; p < g->n; p++)
-        {
             for (int v = 0; v < g->n; v++)
-            {
                 closure[p][v] = closure[p][v] || (closure[p][s] && closure[s][v]);
-            }
-        }
+
+    for (int i = 0; i < g->n; i++) {
+        for (int j = 0; j < g->n; j++)
+            printf("%d ", closure[i][j]);
+        printf("\n");
     }
 
     return closure; // Do not modify
@@ -220,9 +224,13 @@ bool maharaja_express(Graph *g, int source)
 
 int main()
 {
-    char input_file_path[100] = "testcase_2.txt"; // Can be modified
+    char input_file_path[100] = "testcase_3.txt"; // Can be modified
     Graph *g = create_graph(input_file_path);     // Do not modify
 
+    int** closure = warshall(g);
+    
+        
+    
     // Code goes here
     printf("Number of junctions = %d\n", find_junctions(g));
     if (sheldons_tour(g, true))
