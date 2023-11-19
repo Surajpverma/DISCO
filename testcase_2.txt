@@ -1,0 +1,14 @@
+6
+Amritsar
+Bengaluru
+Chennai
+Delhi
+Faridabad
+Gurugram
+6
+0 1
+1 2
+0 2
+2 3
+3 4
+3 5
