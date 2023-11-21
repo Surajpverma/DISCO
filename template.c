@@ -14,6 +14,7 @@
 #include <string.h>
 #include <stdbool.h>
 #include <assert.h>
+#include <limits.h>
 
 typedef struct Graph
 {
@@ -132,20 +133,14 @@ int **warshall(Graph *g)
     }
 
     // Code goes here
-    for (int i = 0; i < g->n; i++) 
+    for (int i = 0; i < g->n; i++)
         for (int j = 0; j < g->n; j++)
             closure[i][j] = g->adj[i][j];
-    
+
     for (int s = 0; s < g->n; s++)
         for (int p = 0; p < g->n; p++)
             for (int v = 0; v < g->n; v++)
                 closure[p][v] = closure[p][v] || (closure[p][s] && closure[s][v]);
-
-    for (int i = 0; i < g->n; i++) {
-        for (int j = 0; j < g->n; j++)
-            printf("%d ", closure[i][j]);
-        printf("\n");
-    }
 
     return closure; // Do not modify
 }
@@ -157,6 +152,22 @@ int **warshall(Graph *g)
 int find_impossible_pairs(Graph *g)
 {
     int **closure = warshall(g); // Do not modify
+
+    int Required_Pairs = 0;
+
+    for (int i = 0; i < g->n; i++)
+    {
+        for (int j = 0; j < g->n; j++)
+            printf("%d ", closure[i][j]);
+        printf("\n");
+    }
+
+    for (int s = 0; s < g->n; s++)
+        for (int p = 0; p < g->n; p++)
+            if (!closure[s][p] && !closure[p][s])
+                Required_Pairs++;
+
+    return Required_Pairs / 2;
 }
 
 /**
@@ -165,6 +176,34 @@ int find_impossible_pairs(Graph *g)
  */
 int find_vital_train_tracks(Graph *g)
 {
+    int *visited = (int *)malloc(g->n * sizeof(int));
+    int *disc = (int *)malloc(g->n * sizeof(int));
+    int *low = (int *)malloc(g->n * sizeof(int));
+    int time = 0;
+    int bridgeCount = 0;
+
+    for (int i = 0; i < g->n; i++)
+        visited[i] = 0, disc[i] = -1, low[i] = -1;
+
+    for (int i = 0; i < g->n; i++)
+        if (!visited[i])
+            for (int v = 0; v < g->n; v++)
+                if (g->adj[i][v] && !visited[v])
+                {
+                    visited[v] = 1;
+                    disc[v] = low[v] = ++time;
+                    for (int w = 0; w < g->n; w++)
+                        if (g->adj[v][w])
+                            if (!visited[w])
+                            {
+                                visited[w] = 1;
+                                disc[w] = low[w] = ++time;
+                                bridgeCount++;
+                            }
+                            else if (w != i)
+                                low[v] = (low[v] < disc[w]) ? low[v] : disc[w];
+                }
+    return bridgeCount;
 }
 
 /**
@@ -190,6 +229,51 @@ int *upgrade_railway_stations(Graph *g)
  */
 int distance(Graph *g, int city_x, int city_y)
 {
+    int *visited = (int *)malloc(g->n * sizeof(int));
+    int *distance = (int *)malloc(g->n * sizeof(int));
+
+    for (int i = 0; i < g->n; i += 1)
+    {
+        visited[i] = 0;
+        distance[i] = INT_MAX;
+    }
+
+    visited[city_x] = 1;
+    distance[city_x] = 0;
+
+    int queue[g->n];
+    int Front_point = 0;
+    int Rear_point = 0;
+
+    queue[Rear_point] = city_x;
+    Rear_point += 1;
+
+    while (Front_point < Rear_point)
+    {
+
+        int curr = queue[Front_point];
+        Front_point += 1;
+
+        for (int i = 0; i < g->n; i += 1)
+        {
+            if (g->adj[curr][i] == 1 && visited[i] == false)
+            {
+                visited[i] = 1;
+                distance[i] = distance[curr] + 1;
+                queue[Rear_point] = i;
+                Rear_point += 1;
+            }
+        }
+    }
+
+    int Final_ans = distance[city_y];
+    free(visited);
+    free(distance);
+    if (Final_ans == INT_MAX)
+    {
+        return -1;
+    }
+    return Final_ans;
 }
 
 /**
@@ -198,6 +282,30 @@ int distance(Graph *g, int city_x, int city_y)
  */
 int railway_capital(Graph *g)
 {
+    int Capital_city_index = -1;
+    int min_sum = INT_MAX;
+    for (int i = 0; i < g->n; i++)
+    {
+        int sum = 0;
+        for (int j = 0; j < g->n; j++)
+        {
+            if (i != j)
+            {
+                int Distance_btw_i_and_j = distance(g, i, j);
+                if (Distance_btw_i_and_j != -1)
+                {
+                    sum += Distance_btw_i_and_j;
+                }
+            }
+        }
+        if (sum < min_sum)
+        {
+            min_sum = sum;
+            Capital_city_index = i;
+        }
+    }
+
+    return Capital_city_index;
 }
 
 /**
@@ -205,6 +313,16 @@ int railway_capital(Graph *g)
  */
 bool maharaja_express_tour(Graph *g, int source, int current_city, int previous_city, int *visited)
 {
+    if (current_city == source && visited[source])
+        return true;
+
+    visited[current_city] = 1;
+
+    for (int i = 0; i < g->n; i++)
+        if (g->adj[current_city][i] && !g->adj[current_city][previous_city] && (g->adj[current_city][source] || !visited[i]))
+            maharaja_express_tour(g, source, i, current_city, visited);
+        else 
+            return false;
 }
 
 /**
@@ -220,6 +338,8 @@ bool maharaja_express(Graph *g, int source)
         visited[i] = 0;
     }
     // Hint: Call the helper function and pass the visited array created here.
+    for (int i = 0; i < g->n; i++)
+        maharaja_express_tour(g, source, source, -1, visited);
 }
 
 int main()
@@ -227,12 +347,10 @@ int main()
     char input_file_path[100] = "testcase_3.txt"; // Can be modified
     Graph *g = create_graph(input_file_path);     // Do not modify
 
-    int** closure = warshall(g);
-    
-        
-    
     // Code goes here
+    // Q1
     printf("Number of junctions = %d\n", find_junctions(g));
+    // Q2
     if (sheldons_tour(g, true))
     {
         printf("Sheldon's tour (ending in same city as start) = POSSIBLE\n");
@@ -248,6 +366,25 @@ int main()
     else
     {
         printf("Sheldon's tour (ending in different city as start) = IMPOSSIBLE\n");
+    }
+    // Q3
+    printf("Number of impossible pairs = %d\n", find_impossible_pairs(g));
+    // Q4
+    printf("Number of vital tracks = %d\n", find_vital_train_tracks(g));
+    // Q6
+    for (int i = 0; i < g->n - 1; i++)
+        for (int j = i + 1; j < g->n; j++)
+            printf("Distance between %s and %s = %d\n", g->station_names[i], g->station_names[j], distance(g, i, j));
+    // Q7
+    printf("Railway Capital = %s\n", g->station_names[railway_capital(g)]);
+    // Q8
+    for (int i = 0; i < g->n; i++)
+    {
+        printf("%d", maharaja_express(g, i));
+        if (maharaja_express(g, i))
+            printf("Maharaja Express tour starting from %s = POSSIBLE\n", g->station_names[i]);
+        else
+            printf("Maharaja Express tour starting from %s = IMPOSSIBLE\n", g->station_names[i]);
     }
 
     return 0;
