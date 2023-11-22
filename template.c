@@ -33,6 +33,7 @@ Graph *create_graph(char input_file_path[])
     Graph *g = (Graph *)malloc(sizeof(Graph));
     // Size of graph
     fscanf(f, "%d", &(g->n));
+    printf("Done0\n");
     // Names of stations
     g->station_names = (char **)malloc(g->n * sizeof(char *));
     for (int i = 0; i < g->n; i++)
@@ -40,6 +41,7 @@ Graph *create_graph(char input_file_path[])
         g->station_names[i] = (char *)malloc(100 * sizeof(char));
         fscanf(f, "%s", g->station_names[i]);
     }
+    printf("Done1\n");
     // Adjacency matrix
     g->adj = (int **)malloc(g->n * sizeof(int *));
     for (int i = 0; i < g->n; i++)
@@ -56,6 +58,12 @@ Graph *create_graph(char input_file_path[])
         g->adj[y][x] = 1;
     }
     fclose(f);
+    for (int i = 0; i < g->n; i++)
+    {
+        for (int j = 0; j < g->n; j++)
+            printf("%d ", g->adj[i][j]);
+        printf("\n");
+    }
     return g;
 }
 // ---------------------------DO NOT MODIFY (End)------------------------------
@@ -128,15 +136,14 @@ int **warshall(Graph *g)
     // Do not modify or delete pre-filled code!
     int **closure = (int **)malloc(g->n * sizeof(int *));
     for (int i = 0; i < g->n; i++)
-    {
         closure[i] = (int *)calloc(g->n, sizeof(int));
-    }
 
     // Code goes here
     for (int i = 0; i < g->n; i++)
         for (int j = 0; j < g->n; j++)
             closure[i][j] = g->adj[i][j];
 
+    printf("Closure Matrix:\n");
     for (int s = 0; s < g->n; s++)
         for (int p = 0; p < g->n; p++)
             for (int v = 0; v < g->n; v++)
@@ -216,10 +223,50 @@ int find_vital_train_tracks(Graph *g)
 int *upgrade_railway_stations(Graph *g)
 {
     int *upgrades = (int *)calloc(g->n, sizeof(int)); // Do not modify
-
     // Code goes here
+    for (int i = 0; i < g->n; i++)
+        upgrades[i] = -1;
 
-    return upgrades; // Do not modify
+    for (int i = 0; i < g->n; i++)
+    {
+        int changed = 0;
+        upgrades[i] = 0;
+
+        for (int j = 0; j < g->n; j++)
+        {
+            if (i == j)
+                continue;
+
+            if (g->adj[i][j] == 1 && upgrades[j] == 0)
+            {
+                if (changed == 0)
+                {
+                    upgrades[i] = 1;
+                    changed = 1;
+                }
+                else
+                {
+                    for (int j = 0; j < g->n; j++)
+                        if (g->adj[i][j] == 1 && upgrades[j] == 1 && changed == 1)
+                        {
+                            for (int k = 0; k < g->n; k++)
+                                upgrades[k] = -1;
+                            return upgrades;
+                        }
+                }
+            }
+        }
+
+        for (int j = 0; j < g->n; j++)
+            if (g->adj[i][j] == 1 && upgrades[j] == 1 && changed == 1)
+            {
+                for (int k = 0; k < g->n; k++)
+                    upgrades[k] = -1;
+                return upgrades;
+            }
+    }
+
+    return upgrades; //  Do not modify
 }
 
 /**
@@ -321,7 +368,7 @@ bool maharaja_express_tour(Graph *g, int source, int current_city, int previous_
     for (int i = 0; i < g->n; i++)
         if (g->adj[current_city][i] && !g->adj[current_city][previous_city] && (g->adj[current_city][source] || !visited[i]))
             maharaja_express_tour(g, source, i, current_city, visited);
-        else 
+        else
             return false;
 }
 
@@ -344,13 +391,15 @@ bool maharaja_express(Graph *g, int source)
 
 int main()
 {
-    char input_file_path[100] = "testcase_3.txt"; // Can be modified
+    char input_file_path[100] = "testcase_1.txt"; // Can be modified
     Graph *g = create_graph(input_file_path);     // Do not modify
 
     // Code goes here
     // Q1
+    printf("\nSOLUTION OF Q1:\n");
     printf("Number of junctions = %d\n", find_junctions(g));
     // Q2
+    printf("\nSOLUTION OF Q2:\n");
     if (sheldons_tour(g, true))
     {
         printf("Sheldon's tour (ending in same city as start) = POSSIBLE\n");
@@ -368,16 +417,29 @@ int main()
         printf("Sheldon's tour (ending in different city as start) = IMPOSSIBLE\n");
     }
     // Q3
+    printf("\nSOLUTION OF Q3:\n");
     printf("Number of impossible pairs = %d\n", find_impossible_pairs(g));
     // Q4
+    printf("\nSOLUTION OF Q4:\n");
     printf("Number of vital tracks = %d\n", find_vital_train_tracks(g));
+    // Q5
+    printf("\nSOLUTION OF Q5:\n");
+    int *upgrade = upgrade_railway_stations(g);
+    if (upgrade[0] == -1)
+        printf("Not possible to upgarde\n");
+    else
+        for (int i = 0; i < g->n; i++)
+            printf("Upgrade to Station %s = %s\n", g->station_names[i], upgrade[i] == 1 ? "Restaurant" : "Maintainance Depot");
     // Q6
+    printf("\nSOLUTION OF Q6:\n");
     for (int i = 0; i < g->n - 1; i++)
         for (int j = i + 1; j < g->n; j++)
             printf("Distance between %s and %s = %d\n", g->station_names[i], g->station_names[j], distance(g, i, j));
     // Q7
+    printf("\nSOLUTION OF Q7:\n");
     printf("Railway Capital = %s\n", g->station_names[railway_capital(g)]);
     // Q8
+    printf("\nSOLUTION OF Q8:\n");
     for (int i = 0; i < g->n; i++)
     {
         printf("%d", maharaja_express(g, i));
